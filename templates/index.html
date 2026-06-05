@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Robot Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>🤖 Robot Control Dashboard</h1>
+          <!-- CHANGED: subtitle now says the dashboard supports both mock and log mode -->
+          <p class="subtitle">
+            Prototype UI with both mock scenarios and current-log mode
+          </p>
+        </div>
+
+        <div class="controls">
+          <!-- NEW: data source selector -->
+          <div class="control-group">
+            <label for="data-mode">Data source:</label>
+            <select id="data-mode" onchange="updateMode()">
+              <option value="mock">Mock scenarios</option>
+              <!-- CHANGED: current log is selected by default -->
+              <option value="log" selected>Current log</option>
+            </select>
+          </div>
+
+          <!-- KEEP: explanation style selector for mock scenarios -->
+          <div class="control-group">
+            <label for="persona">Explanation style:</label>
+            <select id="persona" onchange="updatePersona()">
+              <option value="neutral">Neutral</option>
+              <option value="friendly">Friendly</option>
+              <option value="expert">Expert</option>
+            </select>
+          </div>
+
+          <!-- KEEP: detail selector for mock scenarios -->
+          <div class="control-group">
+            <label for="detail">Detail level:</label>
+            <select id="detail" onchange="updateDetailLevel()">
+              <option value="brief">Brief</option>
+              <option value="normal" selected>Normal</option>
+              <option value="detailed">Detailed</option>
+            </select>
+          </div>
+
+          <!-- REMOVED: refresh-rate dropdown is no longer here -->
+        </div>
+      </header>
+
+      <section class="meta-bar four-cols">
+        <div class="meta-item">
+          <span class="meta-label">System state</span>
+          <span class="meta-value state-badge idle" id="system-state"
+            >Idle</span
+          >
+        </div>
+
+        <div class="meta-item">
+          <span class="meta-label">Battery</span>
+          <!-- NEW: battery now uses badge styling -->
+          <span class="meta-value battery-badge unknown" id="battery-text"
+            >Unknown</span
+          >
+        </div>
+
+        <div class="meta-item">
+          <span class="meta-label">Source</span>
+          <span class="meta-value" id="source-text">Log file</span>
+        </div>
+
+        <div class="meta-item">
+          <!-- CHANGED: clearer wording than "Last update" -->
+          <span class="meta-label">Last command time</span>
+          <span class="meta-value" id="timestamp-text">—</span>
+        </div>
+      </section>
+
+      <div class="card" id="card-understood">
+        <div class="card-label">💬 What I understood</div>
+        <div class="card-content" id="understood-text">
+          Waiting for command...
+        </div>
+      </div>
+
+      <div class="card" id="card-status">
+        <div class="card-label">⚙️ Currently doing</div>
+        <div class="card-content" id="status-text">Idle</div>
+        <div class="status-indicator idle" id="status-dot"></div>
+      </div>
+
+      <div class="card" id="card-outcome">
+        <div class="card-label">📋 Outcome / Issue explanation</div>
+        <div class="card-content" id="outcome-text">No issues reported.</div>
+      </div>
+
+      <!-- NEW: recent log panel so actual log entries are visible -->
+      <div class="card" id="recent-log-card">
+        <div class="card-label">🧾 Recent log activity</div>
+        <ul class="log-list" id="recent-log-list">
+          <li class="log-empty">No log entries loaded yet.</li>
+        </ul>
+      </div>
+
+      <!-- KEEP: simulator only for mock mode -->
+      <div class="simulator" id="simulator-panel">
+        <p class="sim-label">Simulation of the robot's task</p>
+        <button onclick="simulateScenario('follow')">
+          Simulate: Follow me
+        </button>
+        <button onclick="simulateScenario('navigate')">
+          Simulate: Go to kitchen
+        </button>
+        <button onclick="simulateScenario('success')">
+          Simulate: Task success
+        </button>
+        <button onclick="simulateScenario('fail')">Simulate: Failure</button>
+        <button onclick="simulateScenario('reset')">Reset</button>
+      </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,325 @@
+/* KEEP: base reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #0f1117;
+  color: #e8e8e8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #2a2d3a;
+}
+
+h1 {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #8e95ac;
+}
+
+.controls {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.control-group label {
+  font-size: 0.8rem;
+  color: #a7acc0;
+}
+
+select {
+  background: #1e2130;
+  color: #e8e8e8;
+  border: 1px solid #3a3d4a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: #5a7ef5;
+}
+
+.meta-bar {
+  display: grid;
+  gap: 14px;
+}
+
+.meta-bar.four-cols {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.meta-item {
+  background: #151925;
+  border: 1px solid #262b3b;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #707791;
+  margin-bottom: 8px;
+}
+
+.meta-value {
+  font-size: 1rem;
+  color: #e4e8f5;
+}
+
+/* NEW: battery uses same badge style idea as state */
+.state-badge,
+.battery-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* KEEP: idle state, NEW: battery unknown shares neutral style */
+.state-badge.idle,
+.battery-badge.unknown {
+  background: #2b2f3d;
+  color: #bcc3d8;
+}
+
+/* KEEP: running state, NEW: battery full uses green */
+.state-badge.running,
+.battery-badge.full {
+  background: rgba(78, 203, 113, 0.16);
+  color: #67dd87;
+}
+
+/* KEEP: success state, NEW: battery medium uses yellow */
+.state-badge.success,
+.battery-badge.medium {
+  background: rgba(241, 187, 64, 0.16);
+  color: #ffd56a;
+}
+
+/* KEEP: failed state, NEW: battery low uses red */
+.state-badge.failed,
+.battery-badge.low {
+  background: rgba(224, 90, 90, 0.16);
+  color: #ff8a8a;
+}
+
+.card {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 12px;
+  padding: 20px 24px;
+  position: relative;
+  transition:
+    border-color 0.3s,
+    transform 0.2s;
+}
+
+.card.active {
+  border-color: #5a7ef5;
+}
+
+.card.success {
+  border-color: #43b3ff;
+}
+
+.card.error {
+  border-color: #e05a5a;
+}
+
+.card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #666f89;
+  margin-bottom: 10px;
+}
+
+.card-content {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #d0d0d0;
+  min-height: 28px;
+}
+
+.status-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+
+.status-indicator.running {
+  background: #4ecb71;
+  box-shadow: 0 0 8px #4ecb71;
+  animation: pulse 1.5s infinite;
+}
+
+.status-indicator.success {
+  background: #43b3ff;
+  box-shadow: 0 0 8px #43b3ff;
+}
+
+.status-indicator.error {
+  background: #e05a5a;
+  box-shadow: 0 0 8px #e05a5a;
+}
+
+.status-indicator.idle {
+  background: #555;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* NEW: styles for recent log panel */
+.log-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.log-item {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid #2a2d3a;
+}
+
+.log-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.log-time {
+  color: #8e95ac;
+  font-size: 0.9rem;
+}
+
+.log-message {
+  color: #d0d0d0;
+  line-height: 1.5;
+}
+
+.log-empty {
+  color: #8e95ac;
+}
+
+.simulator {
+  margin-top: 6px;
+  padding: 16px 20px;
+  background: #12141c;
+  border: 1px dashed #2a2d3a;
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.sim-label {
+  width: 100%;
+  font-size: 0.78rem;
+  color: #757d97;
+  text-align: center;
+}
+
+button {
+  background: #252838;
+  color: #c0c4d8;
+  border: 1px solid #3a3d50;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+button:hover {
+  background: #2e3248;
+  border-color: #5a7ef5;
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  header {
+    flex-direction: column;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .control-group {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .meta-bar.four-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .log-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
