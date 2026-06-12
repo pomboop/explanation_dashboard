@@ -1,24 +1,19 @@
-from flask import Flask, jsonify, render_template   # CHANGED: added jsonify
-from pathlib import Path                            # NEW: used to locate interaction_log.txt
-import re                                           # NEW: used to parse log lines
-import shlex                                        # NEW: used to parse BT key="value" log fields safely
+from flask import Flask, jsonify, render_template
+from pathlib import Path   # used to locate interaction_log.txt next to app.py
+import re                  # used to parse log lines with regex
+import shlex               # used to safely parse BT key="value" log fields
 
 
-app = Flask(__name__)                               # KEEP: same Flask app setup
+app = Flask(__name__)
 
 
-# =========================
-# NEW: log file setup
-# =========================
+# Path to the interaction log file written by llm_agent.py, bt_server.py, and tello_controller.py
 BASE_DIR = Path(__file__).resolve().parent
 LOG_FILE = BASE_DIR / "interaction_log.txt"
 
 
-# NEW: prefix pattern for parsing the common start of each log line
-# This supports both:
-# 2025-06-18 09:12:21 - INFO - USER_PROMPT: takeoff
-# and
-# 2025-06-18 09:12:21 - INFO - BT_STATUS source_component="bt" bt_name="simple_bt" ...
+# Regex pattern to parse every log line into timestamp, level, and payload
+# Supports both colon-style (USER_PROMPT: takeoff) and key-value style (BT_STATUS source_component="bt" ...)
 LOG_PREFIX_RE = re.compile(
     r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - '
     r'(?P<level>[A-Z]+) - '
@@ -26,7 +21,7 @@ LOG_PREFIX_RE = re.compile(
 )
 
 
-# NEW: keyword groups for quick classification
+# Keyword groups used to classify USER_PROMPT commands into dashboard states
 MOVEMENT_KEYWORDS = [
     "takeoff", "take off", "land", "move", "turn", "rotate", "forward",
     "backward", "backwards", "left", "right", "up", "down", "flip"
@@ -36,7 +31,7 @@ STATUS_KEYWORDS = ["status", "state"]
 BATTERY_KEYWORDS = ["battery"]
 
 
-# NEW: default data returned if log is empty or missing
+# Returns safe fallback values shown on the dashboard when the log is empty or missing
 def default_state():
     return {
         "mode": "log",
@@ -54,16 +49,15 @@ def default_state():
     }
 
 
-# NEW: clean weird terminal characters from log text
+# Removes terminal escape characters that sometimes appear in log messages
 def clean_message(message: str) -> str:
     text = (message or "").strip()
     text = text.replace("\x1b[A", "").replace("\x1b[D", "").strip()
     return " ".join(text.split())
 
 
-# NEW: parse BT-style key="value" parts safely
-# Example input:
-# source_component="bt" bt_name="simple_bt" bt_status="RUNNING"
+# Parses BT-style key="value" fields into a dictionary
+# Example: source_component="bt" bt_name="simple_bt" bt_status="RUNNING"
 def parse_kv_message(text: str):
     try:
         parts = shlex.split(text)
@@ -79,11 +73,8 @@ def parse_kv_message(text: str):
     return data
 
 
-# NEW: parse a raw log line into structured fields
-# Supports both old style:
-# USER_PROMPT: takeoff
-# and new BT style:
-# BT_STATUS source_component="bt" bt_name="simple_bt" ...
+# Parses a raw log line into structured fields (timestamp, level, event, message, fields)
+# Handles both colon-style events (USER_PROMPT: takeoff) and BT key-value events (BT_STATUS ...)
 def parse_line(line: str):
     match = LOG_PREFIX_RE.match(line.strip())
     if not match:
@@ -101,14 +92,16 @@ def parse_line(line: str):
         "raw": payload,
     }
 
-    # OLD STYLE: EVENT: message
+    # Old style: EVENT: message (e.g. USER_PROMPT: takeoff, TOOL_START: takeoff source_component=agent)
     if ": " in payload:
         event, message = payload.split(": ", 1)
         parsed["event"] = event.strip()
+        # Strip trailing source_component tag so it does not appear in dashboard display text
+        message = re.sub(r'\s*source_component=\S+', '', message)
         parsed["message"] = clean_message(message)
         return parsed
 
-    # NEW BT STYLE: EVENT key="value" key2="value2"
+    # BT key-value style: EVENT key="value" key2="value2"
     parts = payload.split(" ", 1)
     parsed["event"] = parts[0].strip()
 
@@ -119,8 +112,8 @@ def parse_line(line: str):
     return parsed
 
 
-# NEW: basic rule-based classification of the command
-# NOTE: this is only for status/outcome, not for rewriting "understood"
+# Classifies a USER_PROMPT into a system state and source using keyword matching
+# Used to fill dashboard fields when no structured execution events are available yet
 def classify_prompt(prompt: str):
     lowered = prompt.lower()
 
@@ -164,8 +157,8 @@ def classify_prompt(prompt: str):
     }
 
 
-# NEW: convert numeric battery into label
-# Full >= 70, Medium >= 30, Low < 30
+# Converts a numeric battery percentage into a display label: Full, Medium, Low, or Unknown
+# Full >= 70%, Medium >= 30%, Low < 30%
 def battery_label_from_value(battery_value: str):
     if not battery_value or battery_value == "Unknown":
         return "Unknown"
@@ -181,9 +174,8 @@ def battery_label_from_value(battery_value: str):
     return "Low"
 
 
-# NEW: search log for battery values if they exist
-# Supports old style BATTERY_UPDATE: robot=tello, percent=83.0
-# and future field-based logs like battery_percent="83"
+# Searches the log from the bottom up for the most recent battery value
+# Supports BATTERY_UPDATE: robot=tello, percent=83.0 from tello_controller.py
 def extract_battery(lines):
     for line in reversed(lines):
         parsed = parse_line(line)
@@ -206,8 +198,8 @@ def extract_battery(lines):
     return "Unknown"
 
 
-# NEW: get recent meaningful entries for the recent log panel
-# CHANGED: this now supports both agent logs and BT logs
+# Collects the most recent meaningful log entries for the dashboard activity panel
+# Includes agent events (TOOL_START, FINAL_RESPONSE) and BT events (BT_STATUS, BT_ERROR)
 def extract_recent_entries(lines, limit=12):
     recent = []
 
@@ -229,12 +221,14 @@ def extract_recent_entries(lines, limit=12):
             "BT_ERROR",
             "BT_STOPPED_ON_FAILURE",
             "BT_BOOTSTRAP_FAILURE",
+            "BATTERY_UPDATE",
+            "BATTERY_WARNING",
         }:
             continue
 
         display_message = parsed["message"]
 
-        # NEW: make BT status lines cleaner in the dashboard
+        # Format BT_STATUS fields into a readable single line for the activity panel
         if event == "BT_STATUS":
             fields = parsed.get("fields", {})
             display_message = (
@@ -243,7 +237,7 @@ def extract_recent_entries(lines, limit=12):
                 f'active_node={fields.get("active_node", "")}'
             )
 
-        # NEW: show failure reason more clearly for BT errors
+        # For BT errors, show the failure reason directly instead of raw field text
         elif event in {"BT_ERROR", "BT_STOPPED_ON_FAILURE", "BT_BOOTSTRAP_FAILURE"}:
             fields = parsed.get("fields", {})
             display_message = fields.get("failure_reason", parsed["message"])
@@ -263,11 +257,11 @@ def extract_recent_entries(lines, limit=12):
     return recent
 
 
-# NEW: main function that turns interaction_log.txt into dashboard JSON
+# Main function that reads interaction_log.txt and returns structured dashboard data as a dict
 def parse_current_log():
     state = default_state()
 
-    # NEW: if the log file is missing, return safe fallback data
+    # Return fallback state if the log file doesn't exist yet
     if not LOG_FILE.exists():
         state["outcome"] = "interaction_log.txt was not found next to app.py."
         return state
@@ -275,12 +269,19 @@ def parse_current_log():
     raw_lines = LOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines()
     lines = [line for line in raw_lines if line.strip()]
 
-    # NEW: fill battery and recent log list
+    # Extract battery and recent activity from the full log
     state["battery"] = extract_battery(lines)
     state["battery_label"] = battery_label_from_value(state["battery"])
     state["recent_entries"] = extract_recent_entries(lines)
 
-    # NEW: collect latest relevant events from both old and new log formats
+    # If a battery warning was logged, force battery label to Low
+    for line in reversed(lines):
+        parsed = parse_line(line)
+        if parsed and parsed["event"] == "BATTERY_WARNING":
+            state["battery_label"] = "Low"
+            break
+
+    # Find the most recent instance of each relevant event type by scanning from the bottom
     latest_prompt = None
     latest_final_response = None
     latest_tool_start = None
@@ -315,31 +316,26 @@ def parse_current_log():
         }:
             latest_bt_error = parsed
 
-    # NEW: use latest USER_PROMPT as the current understood command
+    # Use the latest USER_PROMPT as "What I understood"
+    # For now this repeats the raw user command since the log does not yet contain a parsed intent field
+    # classify_prompt fills the remaining dashboard cards based on keyword matching
     if latest_prompt:
         state["timestamp"] = latest_prompt["timestamp"]
-
-        # CHANGED ON PURPOSE:
-        # For now, "What I understood" repeats exactly what the user said,
-        # because the current log only gives us USER_PROMPT and not a richer parsed intent.
         state["understood"] = latest_prompt["message"]
-
-        # KEEP / NEW COMBO:
-        # We still classify the prompt to fill the other dashboard cards.
         state["raw_event"] = latest_prompt["event"]
         state["raw_message"] = latest_prompt["message"]
         state.update(classify_prompt(latest_prompt["message"]))
 
-    # NEW: if there is a tool currently/last started, show that as status
+    # If a tool was started, show it as the current action in the "Currently doing" field
     if latest_tool_start:
         state["status"] = f'Tool running: {latest_tool_start["message"]}'
         state["source"] = "LLM / tool layer"
 
-    # NEW: if there is a final response, use it as outcome text
+    # Use the LLM final response as the outcome explanation if available
     if latest_final_response:
         state["outcome"] = latest_final_response["message"]
 
-    # NEW: BT status can override generic rule-based state with real execution-side info
+    # BT status overrides the keyword-based state with real execution information from the robot
     if latest_bt_status:
         fields = latest_bt_status.get("fields", {})
         state["system_state"] = fields.get("system_state", state["system_state"])
@@ -349,7 +345,7 @@ def parse_current_log():
             + (f' | active node: {fields.get("active_node", "")}' if fields.get("active_node") else "")
         )
 
-    # NEW: explicit BT/agent errors should override a generic outcome
+    # Errors from BT or agent layer override the outcome field and set system state to failed
     if latest_bt_error:
         if latest_bt_error["event"].startswith("BT_"):
             fields = latest_bt_error.get("fields", {})
@@ -367,13 +363,13 @@ def parse_current_log():
     return state
 
 
-# KEEP: main page route
+# Serves the main dashboard HTML page
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# NEW: JSON endpoint used by the frontend in log mode
+# API endpoint polled every 2 seconds by the frontend to get the latest dashboard data
 @app.route("/api/dashboard")
 def api_dashboard():
     return jsonify(parse_current_log())
