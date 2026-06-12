@@ -1,4 +1,4 @@
-/* KEEP: base reset */
+/* Base reset */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -107,7 +107,7 @@ select:focus {
   color: #e4e8f5;
 }
 
-/* NEW: battery uses same badge style idea as state */
+/* Battery badge shares the same pill style as the system state badge */
 .state-badge,
 .battery-badge {
   display: inline-block;
@@ -117,28 +117,28 @@ select:focus {
   font-weight: 600;
 }
 
-/* KEEP: idle state, NEW: battery unknown shares neutral style */
+/* Idle state and unknown battery share the same neutral grey style */
 .state-badge.idle,
 .battery-badge.unknown {
   background: #2b2f3d;
   color: #bcc3d8;
 }
 
-/* KEEP: running state, NEW: battery full uses green */
+/* Running state and full battery share the same green style */
 .state-badge.running,
 .battery-badge.full {
   background: rgba(78, 203, 113, 0.16);
   color: #67dd87;
 }
 
-/* KEEP: success state, NEW: battery medium uses yellow */
+/* Success state and medium battery share the same yellow style */
 .state-badge.success,
 .battery-badge.medium {
   background: rgba(241, 187, 64, 0.16);
   color: #ffd56a;
 }
 
-/* KEEP: failed state, NEW: battery low uses red */
+/* Failed state and low battery share the same red style */
 .state-badge.failed,
 .battery-badge.low {
   background: rgba(224, 90, 90, 0.16);
@@ -226,7 +226,7 @@ select:focus {
   }
 }
 
-/* NEW: styles for recent log panel */
+/* Recent log activity panel styles */
 .log-list {
   list-style: none;
   display: flex;

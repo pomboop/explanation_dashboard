@@ -335,7 +335,7 @@ def parse_current_log():
     if latest_final_response:
         state["outcome"] = latest_final_response["message"]
 
-    # BT status overrides the keyword-based state with real execution information from the robot
+     # BT status overrides the keyword-based state with real execution information from the robot
     if latest_bt_status:
         fields = latest_bt_status.get("fields", {})
         state["system_state"] = fields.get("system_state", state["system_state"])

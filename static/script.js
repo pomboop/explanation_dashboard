@@ -1,14 +1,6 @@
-//persona messages
-//simluate what the LLM would generate per style
-
-// Each scenario has:
-// - persona versions: neutral / friendly / expert
-// - detail versions: brief / normal / detailed
-// - state, source, and timestamp info
-
-// KEEP: your scenarios object
-// WHY: this remains your future-facing mock/demo layer
-// KEEP: your mock scenarios object
+// Mock scenarios simulating what the LLM explanation layer would generate per persona and detail level
+// Each scenario has neutral/friendly/expert personas and brief/normal/detailed levels
+// This is the demo layer used in mock mode; the LLM will replace this in the full version
 const scenarios = {
   follow: {
     understood: {
@@ -22,7 +14,7 @@ const scenarios = {
         brief: "Okay! I'll follow you.",
         normal: "Got it! I'll follow you wherever you go.",
         detailed:
-          "Got it! I understood that you want me to follow you, so I’ll keep tracking the nearest visible person.",
+          "Got it! I understood that you want me to follow you, so I'll keep tracking the nearest visible person.",
       },
       expert: {
         brief: "Intent: PersonFollowing.",
@@ -62,7 +54,7 @@ const scenarios = {
         brief: "All good!",
         normal: "Everything looks good so far!",
         detailed:
-          "Everything looks good so far — I’m following successfully without any problems.",
+          "Everything looks good so far — I'm following successfully without any problems.",
       },
       expert: {
         brief: "RUNNING.",
@@ -87,7 +79,7 @@ const scenarios = {
         brief: "Heading to kitchen!",
         normal: "Sure! Heading to the kitchen now.",
         detailed:
-          "Sure! I understood that you want me to go to the kitchen, so I’m starting navigation now.",
+          "Sure! I understood that you want me to go to the kitchen, so I'm starting navigation now.",
       },
       expert: {
         brief: "Intent: NavigateTo.",
@@ -127,7 +119,7 @@ const scenarios = {
         brief: "Moving smoothly!",
         normal: "Almost there, moving smoothly!",
         detailed:
-          "Everything is going well — I’m moving smoothly toward the kitchen.",
+          "Everything is going well — I'm moving smoothly toward the kitchen.",
       },
       expert: {
         brief: "Planner OK.",
@@ -172,7 +164,7 @@ const scenarios = {
         brief: "I finished it!",
         normal: "I finished it successfully!",
         detailed:
-          "I finished the task successfully and I’m now waiting for the next command.",
+          "I finished the task successfully and I'm now waiting for the next command.",
       },
       expert: {
         brief: "BT returned SUCCESS.",
@@ -289,21 +281,9 @@ const scenarios = {
       },
     },
     status: {
-      neutral: {
-        brief: "Idle",
-        normal: "Idle",
-        detailed: "Idle",
-      },
-      friendly: {
-        brief: "Idle",
-        normal: "Idle",
-        detailed: "Idle",
-      },
-      expert: {
-        brief: "Idle",
-        normal: "Idle",
-        detailed: "Idle",
-      },
+      neutral: { brief: "Idle", normal: "Idle", detailed: "Idle" },
+      friendly: { brief: "Idle", normal: "Idle", detailed: "Idle" },
+      expert: { brief: "Idle", normal: "Idle", detailed: "Idle" },
     },
     outcome: {
       neutral: {
@@ -327,14 +307,13 @@ const scenarios = {
   },
 };
 
+// Default mode is log mode so the dashboard reads real data on startup
+let currentMode = "log";
 let currentPersona = "neutral";
 let currentDetail = "normal";
 let currentScenario = "reset";
 
-// CHANGED: default mode is now log mode
-let currentMode = "log";
-
-// KEEP: polling still exists, but there is NO refresh-rate dropdown anymore
+// Timer reference for the polling interval that refreshes the dashboard every 2 seconds
 let refreshTimer = null;
 
 function titleCase(text) {
@@ -381,7 +360,7 @@ function applyStateClasses(state) {
   }
 }
 
-// NEW: battery gets color classes depending on Full / Medium / Low / Unknown
+// Applies color class to the battery badge based on Full / Medium / Low / Unknown label
 function applyBatteryClass(label) {
   const batteryEl = document.getElementById("battery-text");
   batteryEl.className = "meta-value battery-badge";
@@ -397,13 +376,13 @@ function applyBatteryClass(label) {
   }
 }
 
-// KEEP: mock simulator only appears in mock mode
+// Shows the simulator panel only in mock mode, hides it in log mode
 function setSimulatorVisibility() {
   const simulatorPanel = document.getElementById("simulator-panel");
   simulatorPanel.style.display = currentMode === "mock" ? "flex" : "none";
 }
 
-// NEW: render recent log activity list
+// Renders the recent log activity list from the entries returned by the Flask API
 function renderRecentLog(entries) {
   const list = document.getElementById("recent-log-list");
 
@@ -424,7 +403,7 @@ function renderRecentLog(entries) {
     .join("");
 }
 
-// CHANGED: renderState now also updates battery, last command time, and recent log
+// Updates all dashboard fields from a payload object (from Flask API or mock scenario)
 function renderState(payload) {
   document.getElementById("understood-text").textContent =
     payload.understood || "Waiting for command...";
@@ -451,16 +430,13 @@ function displayScenario(name) {
     system_state: scenario.state,
     source: scenario.source,
     timestamp: getCurrentTime(),
-
-    // NEW: mock scenarios do not know real battery, so keep Unknown
+    // Mock scenarios have no real battery data so battery stays Unknown
     battery: "Unknown",
     battery_label: "Unknown",
-
     understood: scenario.understood[persona][detail],
     status: scenario.status[persona][detail],
     outcome: scenario.outcome[persona][detail],
-
-    // NEW: fake recent log entry for mock mode
+    // Single fake log entry shown in the activity panel during mock mode
     recent_entries: [
       { timestamp: getCurrentTime(), message: `Mock scenario: ${name}` },
     ],
@@ -488,7 +464,7 @@ function simulateScenario(name) {
   }
 }
 
-// NEW: fetch real dashboard data from Flask
+// Fetches the latest dashboard data from Flask and updates all fields
 async function refreshDashboardFromLog() {
   try {
     const response = await fetch("/api/dashboard", { cache: "no-store" });
@@ -514,8 +490,7 @@ async function refreshDashboardFromLog() {
   }
 }
 
-// CHANGED: fixed polling every 2 seconds
-// REMOVED: no refresh-rate selector anymore
+// Starts or restarts the 2-second polling interval for log mode
 function restartPolling() {
   if (refreshTimer) {
     clearInterval(refreshTimer);
@@ -542,7 +517,7 @@ function updateMode() {
   restartPolling();
 }
 
-// CHANGED: page starts in log mode and immediately loads the log
+// Initialize the dashboard on page load: start in log mode and begin polling
 setSimulatorVisibility();
 refreshDashboardFromLog();
 restartPolling();

@@ -11,24 +11,22 @@
       <header>
         <div>
           <h1>🤖 Robot Control Dashboard</h1>
-          <!-- CHANGED: subtitle now says the dashboard supports both mock and log mode -->
           <p class="subtitle">
             Prototype UI with both mock scenarios and current-log mode
           </p>
         </div>
 
         <div class="controls">
-          <!-- NEW: data source selector -->
+          <!-- Dropdown to switch between mock scenario mode and live log mode -->
           <div class="control-group">
             <label for="data-mode">Data source:</label>
             <select id="data-mode" onchange="updateMode()">
               <option value="mock">Mock scenarios</option>
-              <!-- CHANGED: current log is selected by default -->
               <option value="log" selected>Current log</option>
             </select>
           </div>
 
-          <!-- KEEP: explanation style selector for mock scenarios -->
+          <!-- Persona selector: changes explanation tone in mock mode -->
           <div class="control-group">
             <label for="persona">Explanation style:</label>
             <select id="persona" onchange="updatePersona()">
@@ -38,7 +36,7 @@
             </select>
           </div>
 
-          <!-- KEEP: detail selector for mock scenarios -->
+          <!-- Detail level selector: changes explanation depth in mock mode -->
           <div class="control-group">
             <label for="detail">Detail level:</label>
             <select id="detail" onchange="updateDetailLevel()">
@@ -47,8 +45,6 @@
               <option value="detailed">Detailed</option>
             </select>
           </div>
-
-          <!-- REMOVED: refresh-rate dropdown is no longer here -->
         </div>
       </header>
 
@@ -62,7 +58,7 @@
 
         <div class="meta-item">
           <span class="meta-label">Battery</span>
-          <!-- NEW: battery now uses badge styling -->
+          <!-- Battery badge: shows Full, Medium, Low, or Unknown with color coding -->
           <span class="meta-value battery-badge unknown" id="battery-text"
             >Unknown</span
           >
@@ -74,7 +70,6 @@
         </div>
 
         <div class="meta-item">
-          <!-- CHANGED: clearer wording than "Last update" -->
           <span class="meta-label">Last command time</span>
           <span class="meta-value" id="timestamp-text">—</span>
         </div>
@@ -98,7 +93,7 @@
         <div class="card-content" id="outcome-text">No issues reported.</div>
       </div>
 
-      <!-- NEW: recent log panel so actual log entries are visible -->
+      <!-- Recent log activity panel: shows the last 12 meaningful events from interaction_log.txt -->
       <div class="card" id="recent-log-card">
         <div class="card-label">🧾 Recent log activity</div>
         <ul class="log-list" id="recent-log-list">
@@ -106,7 +101,7 @@
         </ul>
       </div>
 
-      <!-- KEEP: simulator only for mock mode -->
+      <!-- Simulator panel: only visible in mock mode, hidden in log mode -->
       <div class="simulator" id="simulator-panel">
         <p class="sim-label">Simulation of the robot's task</p>
         <button onclick="simulateScenario('follow')">
