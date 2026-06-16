@@ -281,14 +281,27 @@ def parse_current_log():
             state["battery_label"] = "Low"
             break
 
-    # Find the most recent instance of each relevant event type by scanning from the bottom
+    # Find where the latest command begins (last USER_PROMPT) so we only
+    # consider events belonging to THIS command, not stale ones from earlier commands.
+    last_prompt_index = None
+    for i in range(len(lines) - 1, -1, -1):
+        parsed = parse_line(lines[i])
+        if parsed and parsed["event"] == "USER_PROMPT" and parsed["message"]:
+            last_prompt_index = i
+            break
+
+    # Events belonging to the current command (from the last prompt onward).
+    # If no prompt was found, fall back to the whole log.
+    current_lines = lines[last_prompt_index:] if last_prompt_index is not None else lines
+
+    # Find the most recent instance of each relevant event type within the current command
     latest_prompt = None
     latest_final_response = None
     latest_tool_start = None
     latest_bt_status = None
     latest_bt_error = None
 
-    for line in reversed(lines):
+    for line in reversed(current_lines):
         parsed = parse_line(line)
         if not parsed:
             continue
